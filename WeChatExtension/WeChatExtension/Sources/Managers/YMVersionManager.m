@@ -39,6 +39,7 @@ static NSData *base64_decode(NSString *str)
 
 + (instancetype)shareManager
 {
+    return nil;
     static YMVersionManager *manager = nil;
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{

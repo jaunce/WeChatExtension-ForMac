@@ -841,9 +841,19 @@
     } else {
         msgContact = [sessionMgr getContact:userName];
     }
-    if ([msgContact isBrandContact] || [msgContact isSelf]) {
-        //该消息为公众号或者本人发送的消息
+    if ([msgContact isBrandContact]) {
+        //该消息为公众号的消息
         return;
+    }
+    
+    if ([msgContact isSelf]) {
+        //该消息为本人发送的消息
+        [[NSUserDefaults standardUserDefaults] setDouble:(double)msg.createTime forKey:msg.toUserName.string];
+        return;
+    } else {
+        if ([NSDate dateWithTimeIntervalSince1970:[[NSUserDefaults standardUserDefaults] doubleForKey:msg.fromUserName.string]].timeIntervalSinceNow > -30) {
+            return;
+        }
     }
     VAutoForwardingModel *model = [[YMWeChatPluginConfig sharedConfig] VAutoForwardingModel];
 
@@ -896,17 +906,16 @@
         NSLog(@"%@", msgData.groupChatSenderDisplayName);
         NSString *groupMemberNickName = msgData.groupChatSenderDisplayName.length > 0
             ? msgData.groupChatSenderDisplayName : [YMIMContactsManager getGroupMemberNickName:groupMemberWxid];
-        desc = [desc stringByAppendingFormat:@"群聊【%@】里用户【%@】发来一条消息", msgContact.m_nsNickName, groupMemberNickName];
-        content = contents[1];
+//        desc = [desc stringByAppendingFormat:@"群聊【%@】里用户【%@】发来一条消息", msgContact.m_nsNickName, groupMemberNickName];
+        content = [NSString stringWithFormat:@"%@:%@",groupMemberNickName,contents[1]];
     } else {
-        content = msg.content.string;
         NSString *nickName = [msgContact.m_nsRemark isEqualToString:@""] ? msgContact.m_nsNickName : msgContact.m_nsRemark;
-        desc = [desc stringByAppendingFormat:@"用户【%@】发来一条消息", nickName];
+        content = [NSString stringWithFormat:@"%@:%@",nickName,msg.content.string];
     }
     
     VAutoForwardingModel *model = [[YMWeChatPluginConfig sharedConfig] VAutoForwardingModel];
     [model.forwardingToContacts enumerateObjectsUsingBlock:^(NSString *toWxid, NSUInteger idx, BOOL * _Nonnull stop) {
-        [[YMMessageManager shareManager] sendTextMessage:desc toUsrName:toWxid delay:0];
+//        [[YMMessageManager shareManager] sendTextMessage:desc toUsrName:toWxid delay:0];
         [[YMMessageManager shareManager] sendTextMessage:content toUsrName:toWxid delay:0];
     }];
 }
